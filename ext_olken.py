@@ -7,16 +7,17 @@ def load_tables_q3():
 
     cls = ExactWeight()
 
-    customer_table = pandas.read_table('data_0.1/customer.tbl', delimiter="|", header=None,
+    data_dir = 'data_0.001'
+    customer_table = pandas.read_table('%s/customer.tbl'%data_dir, delimiter="|", header=None,
                                        names=["CUSTKEY", "NAME", "ADDRESS", "NATIONKEY", "PHONE", "ACCTBAL",
                                               "MKTSEGMENT", "COMMENT"], index_col=False)
     #customer_table.set_index('NAME', inplace=True)
-    orders_table = pandas.read_table('data_0.1/orders.tbl', delimiter="|", header=None,
+    orders_table = pandas.read_table('%s/orders.tbl'%data_dir, delimiter="|", header=None,
                                      names=["ORDERKEY", "CUSTKEY", "ORDERSTATUS", "TOTALPRICE", "ORDERDATE",
                                             "ORDERPRIORITY","CLERK","SHIPPRIORITY","COMMENT"], index_col=False)
 
     #orders_table.set_index('ORDERKEY', inplace=True)
-    lineitem_table = pandas.read_table('data_0.1/lineitem.tbl', delimiter="|", header=None,
+    lineitem_table = pandas.read_table('%s/lineitem.tbl'%data_dir, delimiter="|", header=None,
                                        names=["ORDERKEY", "PARTKEY", "SUPPKEY", "LINENUMBER","QUANTITY",
                                               "EXTENDEDPRICE", "DISCOUNT", "TAX", "RETURNFLAG", "LINESTATUS",
                                               "SHIPDATE","COMMITDATE","RECEIPTDATE","SHIPINSTRUCT","SHIPMODE",
@@ -59,40 +60,47 @@ def main(num_samples):
     num_relations = len(R)
     start = time.time()
 
-    for i in range(num_relations-1):
-        r = R[i]
-        if i == 0:
-            wp = W_r0(R, A)
-        else:
-            wp = W_t(R, i-1, A)
+    for s in range(num_samples):
+        S = []
+        for i in range(num_relations-1):
+            r = R[i]
+            if i == 0:
+                wp = W_r0(R, A)
+            else:
+                wp = W_t(R, i-1, A)
 
-        if i == 0:
-            sj = R[0] # r0 joins with all the tuples in R1
-        else:
-            sj = semi_join(R[i-1], R[i], A[i-1])
+            if i == 0:
+                sj = R[0] # r0 joins with all the tuples in R1
+            else:
+                #sj = semi_join(R[i-1], R[i], A[i])
+                sj = semi_join(R[i-1], R[i], A[i-1])
+                #sj = semi_join(R[i+1], R[i], A[i-1])
 
-        w_sj = W_t(R, i+1, A)
-        w = len(sj) * w_sj
-        prob = 1.0 - w / wp
-        if DEBUG:
-            print('-'*100)
-            print(A[i])
-            print(wp)
-            print(w)
-            print(prob)
+            w_sj = W_t(R, i+1, A)
+            w = len(sj) * w_sj
+            prob = 1.0 - w / wp
+            if DEBUG:
+                print('-'*100)
+                print(A[i])
+                print(wp)
+                print(w)
+                print(prob)
 
-        # reject with the probability
-        if random.random() > prob:
-            break
+            # reject with the probability
+            if random.random() > prob:
+                break
 
-        # Sample a tuple t from the semi-joined relations
-        samples = sj.sample(n=num_samples)
+            # Sample a tuple t from the semi-joined relations
+            t = sj.sample(n=num_samples)
+            S.append(t)
+        if S != []:
+            samples.append(S)
 
-    end = time.time()
-    print('Time elapsed: %d seconds' % (end - start))
+    end = time.time() # 0.001
+    print('Time elapsed: %d seconds' % (end - start)) # 4 secs
     print(len(samples))
 
 
 if __name__ == '__main__':
-    main(1000)
+    main(10)
 
