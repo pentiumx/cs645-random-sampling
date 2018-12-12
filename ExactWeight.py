@@ -9,6 +9,34 @@ class ExactWeight:
     def __init__(self, C=1):
         self.C = C
 
+
+
+    def get_Wt(self, tuple_elem, relation_to_join_to ,wt_i_plus_1):
+
+
+        retVal = 0
+
+        indices_of_join_relations = relation_to_join_to.index.get_loc(tuple_elem)
+
+        if isinstance(indices_of_join_relations, np.ndarray):
+            indices_of_join_relations = np.where(indices_of_join_relations)
+
+        if isinstance(indices_of_join_relations, slice):
+            # Include start and stop of the slice.
+            retVal = np.sum(map(wt_i_plus_1.get,
+                                         range(indices_of_join_relations.start,
+                                               indices_of_join_relations.stop)))
+            # for idx in range(indices_of_join_relations.start, indices_of_join_relations.stop):
+            #     W_t[i][tuple_j] += W_t[i + 1][idx]
+        else:
+            if isinstance(indices_of_join_relations, tuple):
+                retVal = np.sum(map(wt_i_plus_1.get, indices_of_join_relations[0]))
+            else:
+                # single value is returned if only 1 exists
+                retVal = wt_i_plus_1[indices_of_join_relations]
+
+        return retVal
+
     def algorithm1(self, relationsToJoin):
 
         num_relations = len(relationsToJoin)
@@ -30,84 +58,121 @@ class ExactWeight:
             print("--- %s seconds ---" % (time.time() - start_time))
             # Query 3
             if num_relations == 3:
-                for tuple_j in range(len(relationsToJoin[i])):
-                    print(tuple_j)
-                    if i == 1:
+
+                if i == 1:
+                    for tuple_j in range(len(relationsToJoin[i])):
+                        # print(tuple_j)
                         if relationsToJoin[i].iloc[tuple_j]['ORDERKEY'] in relationsToJoin[i+1].index:
-                            # Get indices of tuples in i+1 relation which joins with tuple_j
-                            indices_of_join_relations = relationsToJoin[i + 1].index.get_loc(relationsToJoin[i].iloc[tuple_j]['ORDERKEY'])
 
-                            # tuple_j_semi_join_R_i_plus_1 = relationsToJoin[i + 1].loc[relationsToJoin[i].iloc[tuple_j].name]
+                            W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j]['ORDERKEY'],
+                                                          relationsToJoin[i + 1], W_t[i + 1])
 
-                            if isinstance(indices_of_join_relations, slice):
-                                # Include start and stop of the slice.
-                                W_t[i][tuple_j] = np.sum(map(W_t[i + 1].get,
-                                                             range(indices_of_join_relations.start,
-                                                                   indices_of_join_relations.stop)))
-                                # for idx in range(indices_of_join_relations.start, indices_of_join_relations.stop):
-                                #     W_t[i][tuple_j] += W_t[i + 1][idx]
-                            else:
-                                if isinstance(indices_of_join_relations, tuple):
-                                    W_t[i][tuple_j] = np.sum(map(W_t[i + 1].get, indices_of_join_relations[0]))
-                                else:
-                                    # single value is returned if only 1 exists
-                                    W_t[i][tuple_j] = W_t[i + 1][indices_of_join_relations]
-                    if i == 0:
-                        # get rows in (i+1)^th relation (orders) which have
-                        # relationsToJoin[i].iloc[tuple_j].name
-                        # in o_custkey
-
+                if i == 0:
+                    print("--- %s seconds ---" % (time.time() - start_time))
+                    for tuple_j in range(len(relationsToJoin[i])):
+                        # print(tuple_j)
                         if relationsToJoin[i].iloc[tuple_j].name in relationsToJoin[i + 1].index:
-                            indices_of_join_relations = np.where(relationsToJoin[i + 1].index
-                                                                 .get_loc(relationsToJoin[i].iloc[tuple_j].name))
 
-                            if isinstance(indices_of_join_relations, slice):
-                                W_t[i][tuple_j] = np.sum(map(W_t[i + 1].get,
-                                                             range(indices_of_join_relations.start,
-                                                                   indices_of_join_relations.stop)))
-                                # Include start and stop of the slice.
-                                # for idx in range(indices_of_join_relations.start, indices_of_join_relations.stop):
-                                #     W_t[i][tuple_j] += W_t[i + 1][idx]
-                            else:
-                                if isinstance(indices_of_join_relations, tuple):
-                                    W_t[i][tuple_j] = np.sum(map(W_t[i + 1].get, indices_of_join_relations[0]))
-                                    # for idx in indices_of_join_relations[0]:
-                                    #     W_t[i][tuple_j] += W_t[i + 1][idx]
-                                # single value is returned if only 1 exists
-                                else:
-                                    W_t[i][tuple_j] = W_t[i + 1][indices_of_join_relations]
-
-                        # matchingIndexes = relationsToJoin[i + 1].loc[relationsToJoin[i + 1]['CUSTKEY'] == relationsToJoin[i]
-                        #         .iloc[tuple_j].name].index
-
-                        # for idx in matchingIndexes:
-                        #     row = relationsToJoin[i + 1].index.get_loc(idx)
-                        #     # https://stackoverflow.com/questions/34897014/how-do-i-find-the-iloc-of-a-row-in-pandas-dataframe
-                        #     W_t[i][tuple_j] += W_t[i + 1][row]
-                    pass
+                            W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j].name,
+                                                          relationsToJoin[i + 1], W_t[i + 1])
 
             # Query X
             elif num_relations == 5:
-                for tuple_j in range(len(relationsToJoin[i])):
+                if i == 3:
+                    for tuple_j in range(len(relationsToJoin[i])):
+                        # orders, lineitem
+                        if relationsToJoin[i].iloc[tuple_j]['ORDERKEY'] in relationsToJoin[i+1].index:
 
-                    pass
+                            W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j]['ORDERKEY'],
+                                                          relationsToJoin[i + 1], W_t[i + 1])
+                if i == 2:
+                    print("--- %s seconds ---" % (time.time() - start_time))
+                    for tuple_j in range(len(relationsToJoin[i])):
+                        # customers, orders
+                        if relationsToJoin[i].iloc[tuple_j]['CUSTKEY'] in relationsToJoin[i + 1].index:
+
+                            W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j]['CUSTKEY'],
+                                                          relationsToJoin[i + 1], W_t[i + 1])
+                if i == 1:
+                    print("--- %s seconds ---" % (time.time() - start_time))
+                    for tuple_j in range(len(relationsToJoin[i])):
+                        # supplier, customer
+                        if relationsToJoin[i].iloc[tuple_j].name in relationsToJoin[i + 1].index:
+
+                            W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j].name,
+                                                          relationsToJoin[i + 1], W_t[i + 1])
+                if i == 0:
+                    print("--- %s seconds ---" % (time.time() - start_time))
+                    for tuple_j in range(len(relationsToJoin[i])):
+                        # nation, supplier
+                        if relationsToJoin[i].iloc[tuple_j].name in relationsToJoin[i + 1].index:
+
+                            W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j].name,
+                                                          relationsToJoin[i + 1], W_t[i + 1])
 
             elif num_relations == 7:
-                for tuple_j in range(len(relationsToJoin[i])):
-
-                    pass
+                pass
+                # if i == 5:
+                #     for tuple_j in range(len(relationsToJoin[i])):
+                #         # s.s_nationkey = c2.c_nationkey
+                #         if relationsToJoin[i].iloc[tuple_j]['ORDERKEY'] in relationsToJoin[i+1].index:
+                #
+                #             W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j]['ORDERKEY'],
+                #                                           relationsToJoin[i + 1], W_t[i + 1])
+                # if i == 4:
+                #     for tuple_j in range(len(relationsToJoin[i])):
+                #         # orders, lineitem
+                #         if relationsToJoin[i].iloc[tuple_j]['ORDERKEY'] in relationsToJoin[i+1].index:
+                #
+                #             W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j]['ORDERKEY'],
+                #                                           relationsToJoin[i + 1], W_t[i + 1])
+                # if i == 3:
+                #     for tuple_j in range(len(relationsToJoin[i])):
+                #         # orders, lineitem
+                #         if relationsToJoin[i].iloc[tuple_j]['ORDERKEY'] in relationsToJoin[i+1].index:
+                #
+                #             W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j]['ORDERKEY'],
+                #                                           relationsToJoin[i + 1], W_t[i + 1])
+                # if i == 2:
+                #     print("--- %s seconds ---" % (time.time() - start_time))
+                #     for tuple_j in range(len(relationsToJoin[i])):
+                #         # customers, orders
+                #         if relationsToJoin[i].iloc[tuple_j]['CUSTKEY'] in relationsToJoin[i + 1].index:
+                #
+                #             W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j]['CUSTKEY'],
+                #                                           relationsToJoin[i + 1], W_t[i + 1])
+                # if i == 1:
+                #     print("--- %s seconds ---" % (time.time() - start_time))
+                #     for tuple_j in range(len(relationsToJoin[i])):
+                #         # supplier, customer
+                #         if relationsToJoin[i].iloc[tuple_j].name in relationsToJoin[i + 1].index:
+                #
+                #             W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j].name,
+                #                                           relationsToJoin[i + 1], W_t[i + 1])
+                # if i == 0:
+                #     print("--- %s seconds ---" % (time.time() - start_time))
+                #     for tuple_j in range(len(relationsToJoin[i])):
+                #         # nation, supplier
+                #         if relationsToJoin[i].iloc[tuple_j].name in relationsToJoin[i + 1].index:
+                #
+                #             W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j].name,
+                #                                           relationsToJoin[i + 1], W_t[i + 1])
 
 
         print("--- %s seconds ---" % (time.time() - start_time))
 
+        setOfNonZeroWt = {}
+        for i in range(1, num_relations):
+            setOfNonZeroWt[i] = set(self.getIndicesForNonZeroWt(W_t[i]))
+
         # For iterating over dataframe rows
         # for index, row in relationsToJoin[i].iterrows():
-
+        start_time = time.time()
         total_samples = 1000
         for num_sample in range(total_samples):
 
             # W_R0 = sum(W_t[0].values())
-            print(num_sample)
+            # print(num_sample)
             idx = self.getRandomKey(W_t[0])
             tuple_t = relationsToJoin[0].iloc[idx]
             for i in range(1, num_relations):
@@ -115,62 +180,98 @@ class ExactWeight:
                 if num_relations == 3:
                     if i == 1:
                         indices_of_join_relations = np.where(relationsToJoin[i].index.get_loc(tuple_t.name))
-                        if isinstance(indices_of_join_relations, slice):
-                            W_t[i][tuple_j] = np.sum(map(W_t[i + 1].get,
-                                                         range(indices_of_join_relations.start,
-                                                               indices_of_join_relations.stop)))
-
-                        else:
-                            if isinstance(indices_of_join_relations, tuple):
-                                idx = random.choice(indices_of_join_relations[0])
-                                #idx = random.choice([x for x in indices_of_join_relations[0] for y in range(W_t[i][x])])
-                                tuple_t = relationsToJoin[i].iloc[idx]
-                            else:
-                                W_t[i][tuple_j] = W_t[i + 1][indices_of_join_relations]
                     if i == 2:
                         indices_of_join_relations = relationsToJoin[i].index.get_loc(tuple_t['ORDERKEY'])
-                        if isinstance(indices_of_join_relations, slice):
-                            idx = random.choice(range(indices_of_join_relations.start,
-                                                                  indices_of_join_relations.stop))
 
-                            # idx = random.choice([x for x in range(indices_of_join_relations.start,
-                            #                                       indices_of_join_relations.stop) for y in range(W_t[i][x])])
-                            tuple_t = relationsToJoin[i].iloc[idx]
+                if num_relations==5:
+                    # print(i,' ',tuple_t.name)
 
-                        else:
-                            if isinstance(indices_of_join_relations, tuple):
-                                idx = random.choice(indices_of_join_relations[0])
-                                # idx = random.choice([x for x in indices_of_join_relations[0] for y in range(W_t[i][x])])
-                                tuple_t = relationsToJoin[i].iloc[idx]
-                            else:
-                                # Single case
-                                tuple_t = relationsToJoin[i].iloc[indices_of_join_relations]
 
-        print("--- %s seconds ---" % (time.time() - start_time))
+                    if i==3:
+                        indices_of_join_relations = np.where(relationsToJoin[i].index.get_loc(tuple_t['CUSTKEY']))
+                    elif i==4:
+                        indices_of_join_relations = np.where(relationsToJoin[i].index.get_loc(tuple_t['ORDERKEY']))
+                    else:
+                        indices_of_join_relations = np.where(relationsToJoin[i].index.get_loc(tuple_t.name))
+
+                if isinstance(indices_of_join_relations, slice):
+                    filteredList = list(set(range(indices_of_join_relations.start,
+                          indices_of_join_relations.stop)) & setOfNonZeroWt[i])
+                    idx = random.choice(filteredList)
+
+                    # idx = random.choice([x for x in range(indices_of_join_relations.start,
+                    #                                       indices_of_join_relations.stop) for y in range(W_t[i][x])])
+                    tuple_t = relationsToJoin[i].iloc[idx]
+
+                else:
+                    if isinstance(indices_of_join_relations, tuple):
+                        filteredList = list(set(indices_of_join_relations[0]) & setOfNonZeroWt[i])
+                        idx = random.choice(filteredList)
+                        tuple_t = relationsToJoin[i].iloc[idx]
+                    else:
+                        tuple_t = relationsToJoin[i].iloc[indices_of_join_relations]
+
+
+        print("--- Sampling ", total_samples,  " samples took %s seconds ---" % (time.time() - start_time))
 
     def getRandomKey(self, dictionary):
         # Return random key with non-zero value
-        filtered_dict = {key: value for key, value in dictionary.items() if value}
-        return random.choice(filtered_dict.keys())
+        return random.choice(self.getIndicesForNonZeroWt(dictionary))
 
+    def getIndicesForNonZeroWt(self, dictionary):
+        filtered_dict = {key: value for key, value in dictionary.items() if value > 0}
         # Too slow
-        #random.choice([x for x in dictionary for y in range(dictionary[x])])
+        # random.choice([x for x in dictionary for y in range(dictionary[x])])
+        return filtered_dict.keys()
 
+    def reverseSampling(self, relation):
+        total_samples = 10000
+        start_time = time.time()
+        for num_sample in range(total_samples):
+
+            # W_R0 = sum(W_t[0].values())
+            print(num_sample)
+            idx = random.randint(0, len(relation))
+            tuple_t = relation.iloc[idx]
+        print("--- Reverse Sampling ", total_samples, " samples took %s seconds ---" % (time.time() - start_time))
 
 def main():
 
     cls = ExactWeight()
 
-    customer_table = pandas.read_table('../data_self_generated/customer.tbl', delimiter="|", header=None,
+    queryNum = input("Which query? 1. Query3, 2. Query X, 3. Query Y. Enter number.")
+
+    print "Starting query : ", queryNum
+
+    if queryNum > 1:
+
+        supplier_table = pandas.read_table('../data_self_generated/sc0.01/supplier.tbl', delimiter="|", header=None,
+                                         names=["SUPPKEY", "NAME", "ADDRESS", "NATIONKEY", "PHONE", "ACCTBAL",
+                                                "COMMENT"], index_col=False)
+
+        supplier_table.set_index('NATIONKEY', inplace=True)
+
+    if queryNum == 2:
+
+        nation_table = pandas.read_table('../data_self_generated/sc0.01/nation.tbl', delimiter="|", header=None,
+                                           names=["NATIONKEY", "NAME", "REGIONKEY", "COMMENT"], index_col=False)
+
+        nation_table.set_index('NATIONKEY', inplace=True)
+
+
+    customer_table = pandas.read_table('../data_self_generated/sc0.01/customer.tbl', delimiter="|", header=None,
                                        names=["CUSTKEY", "NAME", "ADDRESS", "NATIONKEY", "PHONE", "ACCTBAL",
                                               "MKTSEGMENT", "COMMENT"], index_col=False)
 
-    customer_table.set_index('CUSTKEY', inplace=True)
+    if queryNum==1 or queryNum==3:
+        customer_table.set_index('CUSTKEY', inplace=True)
+    elif queryNum==2:
+        customer_table.set_index('NATIONKEY', inplace=True)
 
     # customer_table.loc[1]
     # relationsToJoin[i].iloc[20].name to get the index value at row 20.
 
-    orders_table = pandas.read_table('../data_self_generated/orders.tbl', delimiter="|", header=None,
+    orders_table = pandas.read_table('../data_self_generated/sc0.01/orders.tbl', delimiter="|", header=None,
                                      names=["ORDERKEY", "CUSTKEY", "ORDERSTATUS", "TOTALPRICE", "ORDERDATE",
                                             "ORDERPRIORITY","CLERK","SHIPPRIORITY","COMMENT"], index_col=False)
 
@@ -178,7 +279,7 @@ def main():
 
 
 
-    lineitem_table = pandas.read_table('../data_self_generated/lineitem.tbl', delimiter="|", header=None,
+    lineitem_table = pandas.read_table('../data_self_generated/sc0.01/lineitem.tbl', delimiter="|", header=None,
                                        names=["ORDERKEY", "PARTKEY", "SUPPKEY", "LINENUMBER","QUANTITY",
                                               "EXTENDEDPRICE", "DISCOUNT", "TAX", "RETURNFLAG", "LINESTATUS",
                                               "SHIPDATE","COMMITDATE","RECEIPTDATE","SHIPINSTRUCT","SHIPMODE",
@@ -186,9 +287,19 @@ def main():
 
     lineitem_table.set_index(['ORDERKEY'], inplace=True)
 
-    # Query 3: In the order of the join chain
-    cls.algorithm1([customer_table, orders_table, lineitem_table])
+    if queryNum==1:
+        # Query 3: In the order of the join chain
+        cls.algorithm1([customer_table, orders_table, lineitem_table])
 
+    elif queryNum==2:
+        # Query X: In the order of the join chain
+        cls.algorithm1([nation_table, supplier_table, customer_table, orders_table, lineitem_table])
+
+    elif queryNum==3:
+        # Query Y: In the order of the join chain
+        cls.algorithm1([lineitem_table, orders_table, customer_table, lineitem_table, orders_table, customer_table,
+                        supplier_table])
+    # cls.reverseSampling(lineitem_table)
     pass
 
 
