@@ -111,52 +111,8 @@ class ExactWeight:
                                                           relationsToJoin[i + 1], W_t[i + 1])
 
             elif num_relations == 7:
+
                 pass
-                # if i == 5:
-                #     for tuple_j in range(len(relationsToJoin[i])):
-                #         # s.s_nationkey = c2.c_nationkey
-                #         if relationsToJoin[i].iloc[tuple_j]['ORDERKEY'] in relationsToJoin[i+1].index:
-                #
-                #             W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j]['ORDERKEY'],
-                #                                           relationsToJoin[i + 1], W_t[i + 1])
-                # if i == 4:
-                #     for tuple_j in range(len(relationsToJoin[i])):
-                #         # orders, lineitem
-                #         if relationsToJoin[i].iloc[tuple_j]['ORDERKEY'] in relationsToJoin[i+1].index:
-                #
-                #             W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j]['ORDERKEY'],
-                #                                           relationsToJoin[i + 1], W_t[i + 1])
-                # if i == 3:
-                #     for tuple_j in range(len(relationsToJoin[i])):
-                #         # orders, lineitem
-                #         if relationsToJoin[i].iloc[tuple_j]['ORDERKEY'] in relationsToJoin[i+1].index:
-                #
-                #             W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j]['ORDERKEY'],
-                #                                           relationsToJoin[i + 1], W_t[i + 1])
-                # if i == 2:
-                #     print("--- %s seconds ---" % (time.time() - start_time))
-                #     for tuple_j in range(len(relationsToJoin[i])):
-                #         # customers, orders
-                #         if relationsToJoin[i].iloc[tuple_j]['CUSTKEY'] in relationsToJoin[i + 1].index:
-                #
-                #             W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j]['CUSTKEY'],
-                #                                           relationsToJoin[i + 1], W_t[i + 1])
-                # if i == 1:
-                #     print("--- %s seconds ---" % (time.time() - start_time))
-                #     for tuple_j in range(len(relationsToJoin[i])):
-                #         # supplier, customer
-                #         if relationsToJoin[i].iloc[tuple_j].name in relationsToJoin[i + 1].index:
-                #
-                #             W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j].name,
-                #                                           relationsToJoin[i + 1], W_t[i + 1])
-                # if i == 0:
-                #     print("--- %s seconds ---" % (time.time() - start_time))
-                #     for tuple_j in range(len(relationsToJoin[i])):
-                #         # nation, supplier
-                #         if relationsToJoin[i].iloc[tuple_j].name in relationsToJoin[i + 1].index:
-                #
-                #             W_t[i][tuple_j] = self.get_Wt(relationsToJoin[i].iloc[tuple_j].name,
-                #                                           relationsToJoin[i + 1], W_t[i + 1])
 
 
         print("--- %s seconds ---" % (time.time() - start_time))
@@ -218,6 +174,43 @@ class ExactWeight:
         # Return random key with non-zero value
         return random.choice(self.getIndicesForNonZeroWt(dictionary))
 
+    def algorithm3(self, orders_table, customer_table, lineitem_table, supplier_table):
+        order_cust = orders_table.merge(customer_table, left_on='CUSTKEY', right_on='CUSTKEY')
+        # order_cust_sup = order_cust.merge(supplier_table, left_on='NATIONKEY', right_on='NATIONKEY')
+
+        #index of lineitem_table is on ORDERKEY
+        filtered_lineItems = lineitem_table[lineitem_table.index.isin(order_cust['ORDERKEY'])]
+
+
+        samples = 10000
+        for i in range(samples):
+            print(i)
+            arbitLineItemIdx = random.choice(range(len(filtered_lineItems)))
+
+            lineItemTuple1 = lineitem_table.iloc[arbitLineItemIdx]
+            partkey = lineItemTuple1['PARTKEY']
+
+            filtered_lineItems_on_partkey = lineitem_table[lineitem_table['PARTKEY']==partkey]
+
+            # Will be only 1 tuple
+            order_cust_tuple_1_join = order_cust[order_cust['ORDERKEY'] == lineItemTuple1.name]
+
+            filtered_suppliers = supplier_table[supplier_table.index.isin(order_cust_tuple_1_join['NATIONKEY'])]
+
+            order_cust_tuple_2_join_set = order_cust[order_cust['NATIONKEY'] == order_cust_tuple_1_join['NATIONKEY'].values[0]]
+
+            lineItemTuple2 = filtered_lineItems_on_partkey[filtered_lineItems_on_partkey.index.isin(order_cust_tuple_2_join_set['ORDERKEY'])]
+
+            # print('Sample:',lineItemTuple1,lineItemTuple2.iloc[0],order_cust_tuple_1_join.iloc[0],
+            #       order_cust_tuple_2_join_set.iloc[0], filtered_suppliers.iloc[0])
+
+        # lineOrderCustMerge1 = lineItemTuple1.merge(order_cust, left_on='ORDERKEY', right_on='ORDERKEY')
+        # lineOrderCustMerge2 = lineItemTuple2.merge(order_cust, left_on='ORDERKEY', right_on='ORDERKEY')
+
+
+        pass
+
+
     def getIndicesForNonZeroWt(self, dictionary):
         filtered_dict = {key: value for key, value in dictionary.items() if value > 0}
         # Too slow
@@ -245,7 +238,7 @@ def main():
 
     if queryNum > 1:
 
-        supplier_table = pandas.read_table('../data_self_generated/sc0.01/supplier.tbl', delimiter="|", header=None,
+        supplier_table = pandas.read_table('../data_self_generated/sc0.1/supplier.tbl', delimiter="|", header=None,
                                          names=["SUPPKEY", "NAME", "ADDRESS", "NATIONKEY", "PHONE", "ACCTBAL",
                                                 "COMMENT"], index_col=False)
 
@@ -253,13 +246,13 @@ def main():
 
     if queryNum == 2:
 
-        nation_table = pandas.read_table('../data_self_generated/sc0.01/nation.tbl', delimiter="|", header=None,
+        nation_table = pandas.read_table('../data_self_generated/sc0.1/nation.tbl', delimiter="|", header=None,
                                            names=["NATIONKEY", "NAME", "REGIONKEY", "COMMENT"], index_col=False)
 
         nation_table.set_index('NATIONKEY', inplace=True)
 
 
-    customer_table = pandas.read_table('../data_self_generated/sc0.01/customer.tbl', delimiter="|", header=None,
+    customer_table = pandas.read_table('../data_self_generated/sc0.1/customer.tbl', delimiter="|", header=None,
                                        names=["CUSTKEY", "NAME", "ADDRESS", "NATIONKEY", "PHONE", "ACCTBAL",
                                               "MKTSEGMENT", "COMMENT"], index_col=False)
 
@@ -271,7 +264,7 @@ def main():
     # customer_table.loc[1]
     # relationsToJoin[i].iloc[20].name to get the index value at row 20.
 
-    orders_table = pandas.read_table('../data_self_generated/sc0.01/orders.tbl', delimiter="|", header=None,
+    orders_table = pandas.read_table('../data_self_generated/sc0.1/orders.tbl', delimiter="|", header=None,
                                      names=["ORDERKEY", "CUSTKEY", "ORDERSTATUS", "TOTALPRICE", "ORDERDATE",
                                             "ORDERPRIORITY","CLERK","SHIPPRIORITY","COMMENT"], index_col=False)
 
@@ -279,7 +272,7 @@ def main():
 
 
 
-    lineitem_table = pandas.read_table('../data_self_generated/sc0.01/lineitem.tbl', delimiter="|", header=None,
+    lineitem_table = pandas.read_table('../data_self_generated/sc0.1/lineitem.tbl', delimiter="|", header=None,
                                        names=["ORDERKEY", "PARTKEY", "SUPPKEY", "LINENUMBER","QUANTITY",
                                               "EXTENDEDPRICE", "DISCOUNT", "TAX", "RETURNFLAG", "LINESTATUS",
                                               "SHIPDATE","COMMITDATE","RECEIPTDATE","SHIPINSTRUCT","SHIPMODE",
@@ -297,8 +290,11 @@ def main():
 
     elif queryNum==3:
         # Query Y: In the order of the join chain
-        cls.algorithm1([lineitem_table, orders_table, customer_table, lineitem_table, orders_table, customer_table,
-                        supplier_table])
+
+        # order_cust_supplier_cust_order = order_cust_sup.merge(order_cust, left_on='NATIONKEY', right_on='NATIONKEY')
+        cls.algorithm3(orders_table, customer_table, lineitem_table, supplier_table)
+        pass
+
     # cls.reverseSampling(lineitem_table)
     pass
 
