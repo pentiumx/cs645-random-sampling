@@ -125,12 +125,15 @@ class ExactWeight:
         # for index, row in relationsToJoin[i].iterrows():
         start_time = time.time()
         total_samples = 1000
+        samples = {}
         for num_sample in range(total_samples):
-
+            samples[num_sample] = []
             # W_R0 = sum(W_t[0].values())
             # print(num_sample)
             idx = self.getRandomKey(W_t[0])
             tuple_t = relationsToJoin[0].iloc[idx]
+            samples[num_sample].append({relationsToJoin[0].index.name:tuple_t.name})
+            samples[num_sample].append(tuple_t)
             for i in range(1, num_relations):
                 #Query 3
                 if num_relations == 3:
@@ -166,7 +169,7 @@ class ExactWeight:
                         tuple_t = relationsToJoin[i].iloc[idx]
                     else:
                         tuple_t = relationsToJoin[i].iloc[indices_of_join_relations]
-
+                samples[num_sample].append(tuple_t)
 
         print("--- Sampling ", total_samples,  " samples took %s seconds ---" % (time.time() - start_time))
 
@@ -238,7 +241,7 @@ def main():
 
     if queryNum > 1:
 
-        supplier_table = pandas.read_table('../data_self_generated/sc0.1/supplier.tbl', delimiter="|", header=None,
+        supplier_table = pandas.read_table('../data_self_generated/sc0.01/supplier.tbl', delimiter="|", header=None,
                                          names=["SUPPKEY", "NAME", "ADDRESS", "NATIONKEY", "PHONE", "ACCTBAL",
                                                 "COMMENT"], index_col=False)
 
@@ -246,13 +249,13 @@ def main():
 
     if queryNum == 2:
 
-        nation_table = pandas.read_table('../data_self_generated/sc0.1/nation.tbl', delimiter="|", header=None,
+        nation_table = pandas.read_table('../data_self_generated/sc0.01/nation.tbl', delimiter="|", header=None,
                                            names=["NATIONKEY", "NAME", "REGIONKEY", "COMMENT"], index_col=False)
 
         nation_table.set_index('NATIONKEY', inplace=True)
 
 
-    customer_table = pandas.read_table('../data_self_generated/sc0.1/customer.tbl', delimiter="|", header=None,
+    customer_table = pandas.read_table('../data_self_generated/sc0.01/customer.tbl', delimiter="|", header=None,
                                        names=["CUSTKEY", "NAME", "ADDRESS", "NATIONKEY", "PHONE", "ACCTBAL",
                                               "MKTSEGMENT", "COMMENT"], index_col=False)
 
@@ -264,7 +267,7 @@ def main():
     # customer_table.loc[1]
     # relationsToJoin[i].iloc[20].name to get the index value at row 20.
 
-    orders_table = pandas.read_table('../data_self_generated/sc0.1/orders.tbl', delimiter="|", header=None,
+    orders_table = pandas.read_table('../data_self_generated/sc0.01/orders.tbl', delimiter="|", header=None,
                                      names=["ORDERKEY", "CUSTKEY", "ORDERSTATUS", "TOTALPRICE", "ORDERDATE",
                                             "ORDERPRIORITY","CLERK","SHIPPRIORITY","COMMENT"], index_col=False)
 
@@ -272,7 +275,7 @@ def main():
 
 
 
-    lineitem_table = pandas.read_table('../data_self_generated/sc0.1/lineitem.tbl', delimiter="|", header=None,
+    lineitem_table = pandas.read_table('../data_self_generated/sc0.01/lineitem.tbl', delimiter="|", header=None,
                                        names=["ORDERKEY", "PARTKEY", "SUPPKEY", "LINENUMBER","QUANTITY",
                                               "EXTENDEDPRICE", "DISCOUNT", "TAX", "RETURNFLAG", "LINESTATUS",
                                               "SHIPDATE","COMMITDATE","RECEIPTDATE","SHIPINSTRUCT","SHIPMODE",
