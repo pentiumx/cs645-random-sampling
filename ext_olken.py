@@ -1,12 +1,7 @@
 import random, time
 import pandas
-from ExactWeight import ExactWeight
-
 
 def load_tables_q3():
-
-    cls = ExactWeight()
-
     data_dir = 'data_0.1'
     customer_table = pandas.read_table('%s/customer.tbl'%data_dir, delimiter="|", header=None,
                                        names=["CUSTKEY", "NAME", "ADDRESS", "NATIONKEY", "PHONE", "ACCTBAL",
@@ -24,6 +19,40 @@ def load_tables_q3():
                                               "COMMENT"], index_col=False)
     lineitem_table.set_index(['PARTKEY'], inplace=True)
     return customer_table, orders_table, lineitem_table
+
+def load_tables_qx():
+    data_dir = 'data_0.1'
+    print("Loading supplier table")
+    supplier_table = pandas.read_table('%s/supplier.tbl'%data_dir, delimiter="|", header=None,
+                                     names=["SUPPKEY", "NAME", "ADDRESS", "NATIONKEY", "PHONE", "ACCTBAL",
+                                            "COMMENT"], index_col=False)
+
+    supplier_table.set_index('NAME', inplace=True)
+    print("Loading nation table")
+    nation_table = pandas.read_table('%s/nation.tbl'%data_dir, delimiter="|", header=None,
+                                       names=["NATIONKEY", "NAME", "REGIONKEY", "COMMENT"], index_col=False)
+
+    nation_table.set_index('NAME', inplace=True)
+    print("Loading customer table")
+    customer_table = pandas.read_table('%s/customer.tbl'%data_dir, delimiter="|", header=None,
+                                       names=["CUSTKEY", "NAME", "ADDRESS", "NATIONKEY", "PHONE", "ACCTBAL",
+                                              "MKTSEGMENT", "COMMENT"], index_col=False)
+    customer_table.set_index('NAME', inplace=True)
+    print("Loading orders table")
+    orders_table = pandas.read_table('%s/orders.tbl'%data_dir, delimiter="|", header=None,
+                                     names=["ORDERKEY", "CUSTKEY", "ORDERSTATUS", "TOTALPRICE", "ORDERDATE",
+                                            "ORDERPRIORITY","CLERK","SHIPPRIORITY","COMMENT"], index_col=False)
+
+    orders_table.set_index('CLERK', inplace=True)
+    print("Loading lineitem table")
+    lineitem_table = pandas.read_table('%s/lineitem.tbl'%data_dir, delimiter="|", header=None,
+                                       names=["ORDERKEY", "PARTKEY", "SUPPKEY", "LINENUMBER","QUANTITY",
+                                              "EXTENDEDPRICE", "DISCOUNT", "TAX", "RETURNFLAG", "LINESTATUS",
+                                              "SHIPDATE","COMMITDATE","RECEIPTDATE","SHIPINSTRUCT","SHIPMODE",
+                                              "COMMENT"], index_col=False)
+
+    lineitem_table.set_index(['SUPPKEY'], inplace=True)
+    return [nation_table, supplier_table, customer_table, orders_table, lineitem_table]
 
 
 def semi_join(R1, R2, attr):
@@ -50,7 +79,60 @@ def W_t(R, i, A):
         prod *= M
     return prod
 
-def main(num_samples):
+def main_qx(num_samples):
+    DEBUG = False
+    R = load_tables_qx()
+    A = ['NATIONKEY', 'NATIONKEY', 'CUSTKEY', 'ORDERKEY']         # list of join attributes
+    samples = []
+    num_relations = len(R)
+    start = time.time()
+
+    wps = []
+    w_sjs = []
+
+    # Compute W(t) beforehands
+    for i in range(num_relations):
+        if i == 0:
+            wp = W_r0(R, A)
+        else:
+            wp = W_t(R, i-1, A)
+
+        if i == 0:
+            sj = R[0] # r0 joins with all the tuples in R1
+        else:
+            sj = semi_join(R[i-1], R[i], A[i-1])
+        w_sj = W_t(R, i+1, A)
+
+        wps.append(wp)
+        w_sjs.append(w_sj)
+
+    # Proceed with sampling based on Algorithm 1
+    for s in range(num_samples):
+        S = []
+        for i in range(num_relations-1):
+            wp = wps[i]
+            w_sj = w_sjs[i]
+
+            w = len(sj) * w_sj
+            prob = 1.0 - w / wp
+            #print(prob)
+
+            # reject with the compudated probability
+            if random.random() > prob:
+                break
+
+            # Sample a tuple t from the semi-joined relations
+            t = sj.sample(n=1)
+            S.append(t)
+        if S != []:
+            samples.append(S)
+
+    end = time.time()
+    print('Time elapsed: %f seconds' % (end - start))
+    print(len(samples))
+
+
+def main_q3(num_samples):
     DEBUG = False
     c_table, o_table, l_table = load_tables_q3()
     R = [c_table, o_table, l_table]     # list of tables we are joining
@@ -112,5 +194,6 @@ def main(num_samples):
 
 
 if __name__ == '__main__':
-    main(1000)
+    #main_q3(10)
+    main_qx(10)
 
