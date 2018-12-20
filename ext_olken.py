@@ -91,7 +91,7 @@ def main_qx(num_samples):
     ws = []
 
     # Compute W(t) beforehands
-    for i in range(num_relations):
+    for i in range(num_relations-1):
         if i == 0:
             wp = W_r0(R, A)
         else:
@@ -108,9 +108,12 @@ def main_qx(num_samples):
     print(wps)
     print(ws)
 
+    #print(len(samples))
+
     # Proceed with sampling based on Algorithm 1
     for s in range(num_samples):
         S = []
+        rejected = False
         for i in range(num_relations-1):
             wp = wps[i]
             w = ws[i]
@@ -120,18 +123,19 @@ def main_qx(num_samples):
 
             # reject with the compudated probability
             if random.random() < prob:
+                rejected = True
                 break
 
             # Sample a tuple t from the semi-joined relations
             t = sj.sample(n=1)
             S.append(t)
-        if S != []:
+        if S != [] and not rejected:
             samples.append(S)
 
     end = time.time()
-    print('Time elapsed: %f seconds' % (end - start))
-    print('Collected samples: %d' % len(samples))
-    return len(samples), end - start
+    #print('Time elapsed: %f seconds' % (end - start))
+    #print('Collected samples: %d' % len(samples))
+    return samples, (1.0-len(samples)/num_samples), end - start
 
 
 def main_q3(num_samples):
@@ -167,6 +171,7 @@ def main_q3(num_samples):
     # Proceed with sampling based on Algorithm 1
     for s in range(num_samples):
         S = []
+        rejected = False
         for i in range(num_relations-1):
             wp = wps[i]
             w = ws[i]
@@ -174,23 +179,30 @@ def main_q3(num_samples):
             #print(prob)
 
             # reject with the compudated probability
-            if random.random() > prob:
+            if random.random() < prob:
+                rejected = True
                 break
 
             # Sample a tuple t from the semi-joined relations
             t = sj.sample(n=1)
             S.append(t)
-        if S != []:
+        if S != [] and not rejected:
             samples.append(S)
 
     end = time.time()
-    print('Time elapsed: %f seconds' % (end - start))
-    print('Collected samples: %d' % len(samples))
-    return len(samples), end - start
+    #print('Time elapsed: %f seconds' % (end - start))
+    #print('Collected samples: %d' % len(samples))
+    return samples, (1.0-len(samples)/num_samples), end - start
 
 
 if __name__ == '__main__':
-    num_samples, _time = main_q3(100)
+    samples, rejection_rate, _time = main_q3(1000)
+    print('Time elapsed: %f seconds' % _time)
+    print('Collected samples: %d' % len(samples))
+    print('Rejection rate: %f' % rejection_rate)
     print('='*100)
-    num_samples, _time = main_qx(100)
+    samples, rejection_rate, _time = main_qx(1000)
+    print('Time elapsed: %f seconds' % _time)
+    print('Collected samples: %d' % len(samples))
+    print('Rejection rate: %f' % rejection_rate)
 
