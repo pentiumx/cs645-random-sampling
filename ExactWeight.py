@@ -220,15 +220,18 @@ class ExactWeight:
         # random.choice([x for x in dictionary for y in range(dictionary[x])])
         return filtered_dict.keys()
 
-    def reverseSampling(self, relation):
-        total_samples = 10000
+    def reverseSampling(self, customer_table, orders_table, relation):
+        total_samples = 1000
         start_time = time.time()
         for num_sample in range(total_samples):
 
             # W_R0 = sum(W_t[0].values())
-            print(num_sample)
+            # print(num_sample)
             idx = random.randint(0, len(relation))
             tuple_t = relation.iloc[idx]
+            order_tuple = orders_table[orders_table['ORDERKEY'] == relation.iloc[idx].name]
+            cust_key = order_tuple.index._values[0]
+            cust_tuple = customer_table[customer_table.index == cust_key]
         print("--- Reverse Sampling ", total_samples, " samples took %s seconds ---" % (time.time() - start_time))
 
 def main():
@@ -283,22 +286,22 @@ def main():
 
     lineitem_table.set_index(['ORDERKEY'], inplace=True)
 
-    if queryNum==1:
-        # Query 3: In the order of the join chain
-        cls.algorithm1([customer_table, orders_table, lineitem_table])
+    # if queryNum==1:
+    #     # Query 3: In the order of the join chain
+    #     cls.algorithm1([customer_table, orders_table, lineitem_table])
+    #
+    # elif queryNum==2:
+    #     # Query X: In the order of the join chain
+    #     cls.algorithm1([nation_table, supplier_table, customer_table, orders_table, lineitem_table])
+    #
+    # elif queryNum==3:
+    #     # Query Y: In the order of the join chain
+    #
+    #     # order_cust_supplier_cust_order = order_cust_sup.merge(order_cust, left_on='NATIONKEY', right_on='NATIONKEY')
+    #     cls.algorithm3(orders_table, customer_table, lineitem_table, supplier_table)
+    #     pass
 
-    elif queryNum==2:
-        # Query X: In the order of the join chain
-        cls.algorithm1([nation_table, supplier_table, customer_table, orders_table, lineitem_table])
-
-    elif queryNum==3:
-        # Query Y: In the order of the join chain
-
-        # order_cust_supplier_cust_order = order_cust_sup.merge(order_cust, left_on='NATIONKEY', right_on='NATIONKEY')
-        cls.algorithm3(orders_table, customer_table, lineitem_table, supplier_table)
-        pass
-
-    # cls.reverseSampling(lineitem_table)
+    # cls.reverseSampling(customer_table, orders_table, lineitem_table)
     pass
 
 
