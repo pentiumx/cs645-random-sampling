@@ -56,7 +56,11 @@ def load_tables_qx():
 
 
 def semi_join(R1, R2, attr):
+    #print(R1[attr].isin(R2[attr]))
     return R1[ R1[attr].isin(R2[attr]) ] # assuming that attr is the index in the previous relation
+
+def semi_join_t(R, t, attr):
+    return R[ R[attr].isin(t[attr]) ] # assuming that attr is the index in the previous relation
 
 
 def W_r0(R, A):
@@ -91,33 +95,53 @@ def main_qx(num_samples):
     ws = []
 
     # Compute W(t) beforehands
-    for i in range(num_relations-1):
+    '''for i in range(num_relations-1):
         if i == 0:
             wp = W_r0(R, A)
         else:
-            wp = ws[i-1]
+            ##wp = ws[i-1]
+            wp = W_t(R, i-1, A)
+
         if i == 0:
             sj = R[0] # r0 joins with all the tuples in R1
         else:
-            sj = semi_join(R[i-1], R[i], A[i-1])
+            sj = semi_join(R[i], R[i-1], A[i-1])
+            print(sj)
 
         w_sj = W_t(R, i, A)
         w = len(sj) * w_sj
         wps.append(wp)
         ws.append(w)
     print(wps)
-    print(ws)
+    print(ws)'''
 
-    #print(len(samples))
 
     # Proceed with sampling based on Algorithm 1
     loop_cnt = 0
     while len(samples) < num_samples:
         S = []
         rejected = False
+
+        wps = []
+        ws = []
         for i in range(num_relations-1):
-            wp = wps[i]
-            w = ws[i]
+            #wp = wps[i]
+            #w = ws[i]
+
+            if i == 0:
+                wp = W_r0(R, A)
+            else:
+                wp = W_t(R, i-1, A)
+            if i == 0:
+                sj = R[0] # r0 joins with all the tuples in R1
+            else:
+                sj = semi_join_t(R[i], t, A[i-1])
+                #print(sj)
+                
+            w_sj = W_t(R, i, A)
+            w = len(sj) * w_sj
+            wps.append(wp)
+            ws.append(w)
 
             prob = 1.0 - w / wp # rejection prob
             #print(prob)
@@ -129,9 +153,13 @@ def main_qx(num_samples):
 
             # Sample a tuple t from the semi-joined relations
             t = sj.sample(n=1)
+            
             S.append(t)
         if S != [] and not rejected:
             samples.append(S)
+            #print(wps)
+            #print(ws)
+            
         loop_cnt += 1
 
     end = time.time()
@@ -151,7 +179,7 @@ def main_q3(num_samples):
     ws = []
 
     # Compute W(t) beforehands
-    for i in range(num_relations-1):
+    '''for i in range(num_relations-1):
         if i == 0:
             wp = W_r0(R, A)
         else:
@@ -169,28 +197,52 @@ def main_q3(num_samples):
         ws.append(w)
     print(wps)
     print(ws)
-
-    # Proceed with sampling based on Algorithm 1
+    '''
+     # Proceed with sampling based on Algorithm 1
     loop_cnt = 0
     while len(samples) < num_samples:
         S = []
         rejected = False
+
+        wps = []
+        ws = []
         for i in range(num_relations-1):
-            wp = wps[i]
-            w = ws[i]
-            prob = 1.0 - w / wp
+            #wp = wps[i]
+            #w = ws[i]
+
+            if i == 0:
+                wp = W_r0(R, A)
+            else:
+                wp = W_t(R, i-1, A)
+            if i == 0:
+                sj = R[0] # r0 joins with all the tuples in R1
+            else:
+                sj = semi_join_t(R[i], t, A[i-1])
+                #print(sj)
+                
+            w_sj = W_t(R, i, A)
+            w = len(sj) * w_sj
+            wps.append(wp)
+            ws.append(w)
+
+            prob = 1.0 - w / wp # rejection prob
             #print(prob)
 
             # reject with the compudated probability
             if random.random() < prob:
                 rejected = True
+                
                 break
 
             # Sample a tuple t from the semi-joined relations
             t = sj.sample(n=1)
+            
             S.append(t)
         if S != [] and not rejected:
             samples.append(S)
+            #print(wps)
+            #print(ws)
+            
         loop_cnt += 1
 
     end = time.time()
