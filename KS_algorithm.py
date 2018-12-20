@@ -169,7 +169,7 @@ class ExactWeight:
                         tuple_t = relationsToJoin[i].iloc[idx]
                     else:
                         tuple_t = relationsToJoin[i].iloc[indices_of_join_relations]
-                samples[num_sample].append(tuple_t)
+                    samples[num_sample].append(tuple_t)
                     self.all_relations = samples[num_sample]
 
         print("--- Sampling ", total_samples,  " samples took %s seconds ---" % (time.time() - start_time))
@@ -235,7 +235,7 @@ class ExactWeight:
 
     def doKSTesting(self, samples):
         ratios = []
-        int i = 1
+        i = 1
         for sample in samples:
             ratios.add(i/self.orders[sample])
             i=i+1
