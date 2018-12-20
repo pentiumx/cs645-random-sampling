@@ -111,7 +111,8 @@ def main_qx(num_samples):
     #print(len(samples))
 
     # Proceed with sampling based on Algorithm 1
-    for s in range(num_samples):
+    loop_cnt = 0
+    while len(samples) < num_samples:
         S = []
         rejected = False
         for i in range(num_relations-1):
@@ -131,11 +132,12 @@ def main_qx(num_samples):
             S.append(t)
         if S != [] and not rejected:
             samples.append(S)
+        loop_cnt += 1
 
     end = time.time()
     #print('Time elapsed: %f seconds' % (end - start))
     #print('Collected samples: %d' % len(samples))
-    return samples, (1.0-len(samples)/num_samples), end - start
+    return samples, (1.0-num_samples/loop_cnt), end - start
 
 
 def main_q3(num_samples):
@@ -169,7 +171,8 @@ def main_q3(num_samples):
     print(ws)
 
     # Proceed with sampling based on Algorithm 1
-    for s in range(num_samples):
+    loop_cnt = 0
+    while len(samples) < num_samples:
         S = []
         rejected = False
         for i in range(num_relations-1):
@@ -188,20 +191,21 @@ def main_q3(num_samples):
             S.append(t)
         if S != [] and not rejected:
             samples.append(S)
+        loop_cnt += 1
 
     end = time.time()
     #print('Time elapsed: %f seconds' % (end - start))
     #print('Collected samples: %d' % len(samples))
-    return samples, (1.0-len(samples)/num_samples), end - start
+    return samples, (1.0-num_samples/loop_cnt), end - start
 
 
 if __name__ == '__main__':
-    samples, rejection_rate, _time = main_q3(1000)
+    samples, rejection_rate, _time = main_q3(100)
     print('Time elapsed: %f seconds' % _time)
     print('Collected samples: %d' % len(samples))
     print('Rejection rate: %f' % rejection_rate)
     print('='*100)
-    samples, rejection_rate, _time = main_qx(1000)
+    samples, rejection_rate, _time = main_qx(100)
     print('Time elapsed: %f seconds' % _time)
     print('Collected samples: %d' % len(samples))
     print('Rejection rate: %f' % rejection_rate)
