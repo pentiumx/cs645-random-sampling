@@ -94,26 +94,14 @@ def main_qx(num_samples):
     wps = []
     ws = []
 
-    # Compute W(t) beforehands
-    '''for i in range(num_relations-1):
+    # Compute W'(t) beforehands (cannot precompute W(t) cuz it uses sampled tuples)
+    for i in range(num_relations-1):
         if i == 0:
             wp = W_r0(R, A)
         else:
-            ##wp = ws[i-1]
             wp = W_t(R, i-1, A)
-
-        if i == 0:
-            sj = R[0] # r0 joins with all the tuples in R1
-        else:
-            sj = semi_join(R[i], R[i-1], A[i-1])
-            print(sj)
-
-        w_sj = W_t(R, i, A)
-        w = len(sj) * w_sj
         wps.append(wp)
-        ws.append(w)
     print(wps)
-    print(ws)'''
 
 
     # Proceed with sampling based on Algorithm 1
@@ -122,16 +110,10 @@ def main_qx(num_samples):
         S = []
         rejected = False
 
-        wps = []
+        #wps = []
         ws = []
         for i in range(num_relations-1):
-            #wp = wps[i]
-            #w = ws[i]
-
-            if i == 0:
-                wp = W_r0(R, A)
-            else:
-                wp = W_t(R, i-1, A)
+            wp = wps[i]
             if i == 0:
                 sj = R[0] # r0 joins with all the tuples in R1
             else:
@@ -163,8 +145,6 @@ def main_qx(num_samples):
         loop_cnt += 1
 
     end = time.time()
-    #print('Time elapsed: %f seconds' % (end - start))
-    #print('Collected samples: %d' % len(samples))
     return samples, (1.0-num_samples/loop_cnt), end - start
 
 
@@ -178,42 +158,24 @@ def main_q3(num_samples):
     wps = []
     ws = []
 
-    # Compute W(t) beforehands
-    '''for i in range(num_relations-1):
+    # Compute W'(t) beforehands (cannot precompute W(t) cuz it uses sampled tuples)
+    for i in range(num_relations-1):
         if i == 0:
             wp = W_r0(R, A)
         else:
-            #wp = W_t(R, i-1, A)
-            wp = ws[i-1]
-
-        if i == 0:
-            sj = R[0] # r0 joins with all the tuples in R1
-        else:
-            sj = semi_join(R[i-1], R[i], A[i-1])
-        w_sj = W_t(R, i+1, A)
-        w = len(sj) * w_sj
-
+            wp = W_t(R, i-1, A)
         wps.append(wp)
-        ws.append(w)
     print(wps)
-    print(ws)
-    '''
+
      # Proceed with sampling based on Algorithm 1
     loop_cnt = 0
     while len(samples) < num_samples:
         S = []
         rejected = False
 
-        wps = []
         ws = []
         for i in range(num_relations-1):
-            #wp = wps[i]
-            #w = ws[i]
-
-            if i == 0:
-                wp = W_r0(R, A)
-            else:
-                wp = W_t(R, i-1, A)
+            wp = wps[i]
             if i == 0:
                 sj = R[0] # r0 joins with all the tuples in R1
             else:
@@ -252,12 +214,12 @@ def main_q3(num_samples):
 
 
 if __name__ == '__main__':
-    samples, rejection_rate, _time = main_q3(100)
+    samples, rejection_rate, _time = main_q3(1000)
     print('Time elapsed: %f seconds' % _time)
     print('Collected samples: %d' % len(samples))
     print('Rejection rate: %f' % rejection_rate)
     print('='*100)
-    samples, rejection_rate, _time = main_qx(100)
+    samples, rejection_rate, _time = main_qx(1000)
     print('Time elapsed: %f seconds' % _time)
     print('Collected samples: %d' % len(samples))
     print('Rejection rate: %f' % rejection_rate)
