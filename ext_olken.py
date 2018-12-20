@@ -18,7 +18,7 @@ def load_tables_q3():
                                               "SHIPDATE","COMMITDATE","RECEIPTDATE","SHIPINSTRUCT","SHIPMODE",
                                               "COMMENT"], index_col=False)
     lineitem_table.set_index(['PARTKEY'], inplace=True)
-    return customer_table, orders_table, lineitem_table
+    return [customer_table, orders_table, lineitem_table]
 
 def load_tables_qx():
     data_dir = 'data_0.1'
@@ -62,8 +62,9 @@ def semi_join(R1, R2, attr):
 def W_r0(R, A):
     prod = 1
     n = len(R)
-    size = len(R[1])
-    for j in range(2, n): # W(r0) = W(R1), then i=1, j=i+1 to n
+    size = len(R[0])
+    #for j in range(1, n): # W(r0) = W(R1), then i=1, j=i+1 to n
+    for j in range(1,n):
         M = R[j][A[j-1]].value_counts().max()
         prod *= M
     return prod * size
@@ -86,34 +87,89 @@ def main_qx(num_samples):
     samples = []
     num_relations = len(R)
     start = time.time()
-
     wps = []
-    w_sjs = []
+    ws = []
 
     # Compute W(t) beforehands
     for i in range(num_relations):
         if i == 0:
             wp = W_r0(R, A)
         else:
-            wp = W_t(R, i-1, A)
-
+            wp = ws[i-1]
         if i == 0:
             sj = R[0] # r0 joins with all the tuples in R1
         else:
             sj = semi_join(R[i-1], R[i], A[i-1])
-        w_sj = W_t(R, i+1, A)
 
+        w_sj = W_t(R, i, A)
+        w = len(sj) * w_sj
         wps.append(wp)
-        w_sjs.append(w_sj)
+        ws.append(w)
+    print(wps)
+    print(ws)
 
     # Proceed with sampling based on Algorithm 1
     for s in range(num_samples):
         S = []
         for i in range(num_relations-1):
             wp = wps[i]
-            w_sj = w_sjs[i]
+            w = ws[i]
 
-            w = len(sj) * w_sj
+            prob = 1.0 - w / wp # rejection prob
+            #print(prob)
+
+            # reject with the compudated probability
+            if random.random() < prob:
+                break
+
+            # Sample a tuple t from the semi-joined relations
+            t = sj.sample(n=1)
+            S.append(t)
+        if S != []:
+            samples.append(S)
+
+    end = time.time()
+    print('Time elapsed: %f seconds' % (end - start))
+    print('Collected samples: %d' % len(samples))
+    return len(samples), end - start
+
+
+def main_q3(num_samples):
+    DEBUG = False
+    R = load_tables_q3()
+    A = ['CUSTKEY', 'ORDERKEY']         # list of join attributes
+    samples = []
+    num_relations = len(R)
+    start = time.time()
+    wps = []
+    ws = []
+
+    # Compute W(t) beforehands
+    for i in range(num_relations-1):
+        if i == 0:
+            wp = W_r0(R, A)
+        else:
+            #wp = W_t(R, i-1, A)
+            wp = ws[i-1]
+
+        if i == 0:
+            sj = R[0] # r0 joins with all the tuples in R1
+        else:
+            sj = semi_join(R[i-1], R[i], A[i-1])
+        w_sj = W_t(R, i+1, A)
+        w = len(sj) * w_sj
+
+        wps.append(wp)
+        ws.append(w)
+    print(wps)
+    print(ws)
+
+    # Proceed with sampling based on Algorithm 1
+    for s in range(num_samples):
+        S = []
+        for i in range(num_relations-1):
+            wp = wps[i]
+            w = ws[i]
             prob = 1.0 - w / wp
             #print(prob)
 
@@ -129,71 +185,12 @@ def main_qx(num_samples):
 
     end = time.time()
     print('Time elapsed: %f seconds' % (end - start))
-    print(len(samples))
-
-
-def main_q3(num_samples):
-    DEBUG = False
-    c_table, o_table, l_table = load_tables_q3()
-    R = [c_table, o_table, l_table]     # list of tables we are joining
-    A = ['CUSTKEY', 'ORDERKEY']         # list of join attributes
-    samples = []
-    num_relations = len(R)
-    start = time.time()
-
-    wps = []
-    w_sjs = []
-
-    # Compute W(t) beforehands
-    for i in range(num_relations-1):
-        if i == 0:
-            wp = W_r0(R, A)
-        else:
-            wp = W_t(R, i-1, A)
-
-        if i == 0:
-            sj = R[0] # r0 joins with all the tuples in R1
-        else:
-            #sj = semi_join(R[i-1], R[i], A[i])
-            sj = semi_join(R[i-1], R[i], A[i-1])
-            #sj = semi_join(R[i+1], R[i], A[i-1])
-        w_sj = W_t(R, i+1, A)
-
-        wps.append(wp)
-        w_sjs.append(w_sj)
-
-    # Proceed with sampling based on Algorithm 1
-    for s in range(num_samples):
-        S = []
-        for i in range(num_relations-1):
-            wp = wps[i]
-            w_sj = w_sjs[i]
-
-            w = len(sj) * w_sj
-            prob = 1.0 - w / wp
-            if DEBUG:
-                print('-'*100)
-                print(A[i])
-                print(wp)
-                print(w)
-                print(prob)
-
-            # reject with the compudated probability
-            if random.random() > prob:
-                break
-
-            # Sample a tuple t from the semi-joined relations
-            t = sj.sample(n=1)
-            S.append(t)
-        if S != []:
-            samples.append(S)
-
-    end = time.time()
-    print('Time elapsed: %f seconds' % (end - start))
-    print(len(samples))
+    print('Collected samples: %d' % len(samples))
+    return len(samples), end - start
 
 
 if __name__ == '__main__':
-    #main_q3(10)
-    main_qx(10)
+    num_samples, _time = main_q3(100)
+    print('='*100)
+    num_samples, _time = main_qx(100)
 
